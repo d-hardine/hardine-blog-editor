@@ -1,15 +1,28 @@
 import 'bootstrap/dist/css/bootstrap.min.css'
 import Login from "./pages/Login"
 import Dashboard from "./pages/Dashboard"
-import { Routes, Route, Navigate } from 'react-router-dom'
+import Editor from "./pages/Editor"
+import { Routes, Route } from 'react-router-dom'
+import { useState } from 'react'
+import UserContext from './configs/UserContext'
+import ProtectedRoutes from './configs/ProtectedRoutes'
 
 function App() {
+
+  const [user, setUser] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+
   return (
     <>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-      </Routes>
+      <UserContext.Provider value={{user, setUser}}>
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route element={<ProtectedRoutes  isLoading={isLoading} setIsLoading={setIsLoading} />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/editor" element={<Editor />} />
+          </Route>
+        </Routes>
+      </UserContext.Provider>
     </>
   )
 }

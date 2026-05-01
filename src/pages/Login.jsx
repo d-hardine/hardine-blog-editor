@@ -1,4 +1,5 @@
 import api from '../configs/api'
+import UserContext from '../configs/UserContext'
 import Container from "react-bootstrap/Container"
 import Row from "react-bootstrap/Row"
 import Col from "react-bootstrap/Col"
@@ -7,7 +8,7 @@ import Button from "react-bootstrap/Button"
 import Spinner from "react-bootstrap/Spinner"
 import Alert from "react-bootstrap/Alert"
 import { useContext, useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { useNavigate, Navigate } from "react-router-dom"
 
 function Login() {
 
@@ -16,12 +17,39 @@ function Login() {
   const [showAlert, setShowAlert] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
+  const { setUser } = useContext(UserContext)
+
+  const navigate = useNavigate()
+
+  const handleLogin = async (e) => {
+    setIsLoading(true)
+    e.preventDefault()
+    const loginUser = {
+      username,
+      password,
+    }
+    try {
+      const loginResponse = await api.post('/login', loginUser)
+      if (loginResponse.status === 201) {
+        localStorage.setItem('token', loginResponse.data.token)
+        setUser(loginResponse.data.user)
+        navigate('/dashboard')
+      }
+    } catch (err) {
+      console.error(err)
+      setShowAlert(true)
+      setIsLoading(false)
+    }
+  }
+
+  if (localStorage.getItem('token')) { return (<Navigate to="/dashboard" replace={true} />) }
+
   return (
     <>
       <Container>
         <Row className="align-items-center justify-content-center" style={{height: '100vh'}}>
           <Col className="col-md-6">
-            <Form>
+            <Form onSubmit={handleLogin}>
               <h2 className="mb-5"><b>LOG IN TO HARDINE BLOG EDITOR</b></h2>
               <Form.Group className="mb-3" controlId="formBasicUsername">
                 <Form.Label>Username</Form.Label>
@@ -34,7 +62,6 @@ function Login() {
               <Button type="submit" disabled={isLoading}>Login</Button>
               {isLoading && (<Spinner className="mx-3" animation="grow" variant="secondary" size="sm" />)}
             </Form>
-            <div className=" mb-3 text-muted">Don't have an account? <Link to="/signup"><b>Signup</b></Link></div>
             {showAlert && <Alert variant="danger" onClose={() => setShowAlert(false)} dismissible>Login invalid</Alert>}
           </Col>
         </Row>

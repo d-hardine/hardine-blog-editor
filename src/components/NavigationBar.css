@@ -1,0 +1,13 @@
+.navbar-background-color-dark {
+    background-color: #285A48;
+}
+
+.navbar-background-color-light {
+    background-color: #408A71;
+}
+
+/*override active color from the original blue*/
+.dropdown-item.active,
+.dropdown-item:active {
+  background-color: #285A48 !important;
+}
