@@ -40,8 +40,8 @@ function Dashboard() {
         <Row>
           <Col>
             <h2 className="mt-5 mb-5 fw-bold text-center">All Hardine-Blog Posts</h2>
-            <PostTable allPosts={allPosts} />
-            <Button className="mt-3" variant="success" onClick={() => navigate('/editor')}>Create New Post</Button>
+            <PostTable allPosts={allPosts} setAllPosts={setAllPosts} />
+            <Button className="position-fixed bottom-0 end-0 m-5" size="lg" variant="success" onClick={() => navigate('/editor')}>Create New Post</Button>
           </Col>
         </Row>
         )}

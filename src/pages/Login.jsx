@@ -62,7 +62,7 @@ function Login() {
               <Button type="submit" disabled={isLoading}>Login</Button>
               {isLoading && (<Spinner className="mx-3" animation="grow" variant="secondary" size="sm" />)}
             </Form>
-            {showAlert && <Alert variant="danger" onClose={() => setShowAlert(false)} dismissible>Login invalid</Alert>}
+            {showAlert && <Alert className='mt-3' variant="danger" onClose={() => setShowAlert(false)} dismissible>Username/password incorrect, or you're not an admin</Alert>}
           </Col>
         </Row>
       </Container>

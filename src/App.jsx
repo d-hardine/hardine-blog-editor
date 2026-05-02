@@ -1,7 +1,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css'
 import Login from "./pages/Login"
 import Dashboard from "./pages/Dashboard"
-import Editor from "./pages/Editor"
+import BlogEditor from "./pages/BlogEditor"
 import { Routes, Route } from 'react-router-dom'
 import { useState } from 'react'
 import UserContext from './configs/UserContext'
@@ -19,7 +19,7 @@ function App() {
           <Route path="/" element={<Login />} />
           <Route element={<ProtectedRoutes  isLoading={isLoading} setIsLoading={setIsLoading} />}>
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/editor" element={<Editor />} />
+            <Route path="/editor" element={<BlogEditor />} />
           </Route>
         </Routes>
       </UserContext.Provider>
