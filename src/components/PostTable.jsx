@@ -1,13 +1,21 @@
 import api from "../configs/api"
 import Table from "react-bootstrap/Table"
 import Form from "react-bootstrap/Form"
+import Image from "react-bootstrap/Image"
+import Modal from "react-bootstrap/Modal"
+import Button from "react-bootstrap/Button"
 import { format } from "date-fns"
+import DeletePostModal from "./DeletePostModal"
 import UserContext from "../configs/UserContext"
-import { useContext } from "react"
+import { useContext, useState } from "react"
+import trashIcon from '../assets/trash-icon.svg'
 
 function PostTable({ allPosts, setAllPosts }) {
 
   const { user } = useContext(UserContext)
+
+  const [show, setShow] = useState(false)
+  const [pickedPost, setPickedPost] = useState('')
 
   const togglePublish = async (postId) => {
     const updatedPosts = allPosts.map(post => {
@@ -25,6 +33,26 @@ function PostTable({ allPosts, setAllPosts }) {
     }
   }
 
+  const showDeleteModal = (post) => {
+    setShow(true)
+    setPickedPost(post)
+  }
+
+  const cancelDeletePost = () => {
+    setShow(false)
+    setPickedPost('')
+  }
+  const confirmDeletePost = async (postId) => {
+    try {
+      const deleteResponse = await api.delete(`post/${postId}`)
+      if(deleteResponse.status === 200) {
+        console.log(deleteResponse.data)
+      }
+    } catch(err) {
+      console.error(err)
+    }
+  }
+
   return (
     <>
       <Table striped hover>
@@ -33,9 +61,10 @@ function PostTable({ allPosts, setAllPosts }) {
             <th>#</th>
             <th>Post Title</th>
             <th>Author</th>
-            <th>Created Date</th>
-            <th>Updated Date</th>
+            <th>Created at</th>
+            <th>Updated at</th>
             <th>Published</th>
+            <th>Delete</th>
           </tr>
         </thead>
         <tbody>
@@ -45,8 +74,12 @@ function PostTable({ allPosts, setAllPosts }) {
               <td>{post.title}</td>
               <td>{post.author.name}</td>
               <td>{format(post.createdAt, 'yyyy-MM-dd h:mm a')}</td>
-              <td>{format(post.updatedAt, 'yyyy-MM-dd h:mm a')}</td>
-              <td>
+              {post.createdAt === post.updatedAt ? (
+                <td className="text-center">-</td>
+              ) : (
+                <td>{format(post.updatedAt, 'yyyy-MM-dd h:mm a')}</td>
+              )}
+              <td className="text-center">
                 <Form>
                     <Form.Check
                       type="switch"
@@ -57,11 +90,20 @@ function PostTable({ allPosts, setAllPosts }) {
                     />
                 </Form>
               </td>
+              <td className="text-center">
+                <Button
+                  variant="danger"
+                  disabled={post.authorId !== user.sub ? true : false}
+                  onClick={() => showDeleteModal(post)} size="sm"
+                >
+                  <Image src={trashIcon} width={20} />
+                </Button>
+              </td>
           </tr>
           ))}
         </tbody>
       </Table>
-      <button onClick={() => console.log(allPosts[0])}>testing</button>
+      <DeletePostModal show={show} post={pickedPost} cancelDeletePost={cancelDeletePost} confirmDeletePost={confirmDeletePost}/>
     </>
   )
 }
