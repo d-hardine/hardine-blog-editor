@@ -8,12 +8,22 @@ import Form from "react-bootstrap/Form"
 import Image from "react-bootstrap/Image"
 import Alert from "react-bootstrap/Alert"
 import NavigationBar from "../components/NavigationBar"
-import { useState, useRef, useEffect } from "react"
+import { useContext, useEffect, useState, useRef } from "react"
 import { Editor } from "@tinymce/tinymce-react"
+import UserContext from "../configs/UserContext"
+import { useParams, Link, useNavigate } from "react-router-dom"
 import imagePlus from '../assets/image-plus.svg'
-import { useNavigate } from "react-router-dom"
 
-function BlogEditor() {
+function EditPost() {
+
+  const { user } = useContext(UserContext)
+
+  const params = useParams()
+
+  const navigate = useNavigate()
+
+  const [post, setPost] = useState()
+  const [isPostLoading, setIsPostLoading] = useState(true)
 
   const [newTitle, setNewTitle] = useState('')
   const [newSubtitle, setNewSubtitle] = useState('')
@@ -23,15 +33,30 @@ function BlogEditor() {
   const [newPostImage, setNewPostImage] = useState(null)
   const [alertMessage, setAlertMessage] = useState('')
   const [showAlert, setShowAlert] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
   const [isPosting, setIsPosting] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   const editorRef = useRef(null) //tinyMCE stuff
   const fileInputRef = useRef(null) //for image preview
 
-  const navigate = useNavigate()
-
   useEffect(() => {
+    const retrievePost = async () => {
+      try {
+        const retrieveResponse = await api.get(`/post/${params.postId}`)
+        if (retrieveResponse.status === 200) {
+          setPost(retrieveResponse.data.post)
+          setNewTitle(retrieveResponse.data.post.title)
+          setNewSubtitle(retrieveResponse.data.post.subtitle)
+          setSelectedTags(retrieveResponse.data.post.tags.map(tag => tag.name))
+          setPreview(retrieveResponse.data.post.postPicture)
+        }
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setIsPostLoading(false)
+      }
+    }
+
     const retrieveTags = async () => {
       try {
         const retrieveResponse = await api.get('/all-tags')
@@ -44,6 +69,8 @@ function BlogEditor() {
         setIsLoading(false)
       }
     }
+
+    retrievePost()
     retrieveTags()
   }, [])
 
@@ -82,11 +109,6 @@ function BlogEditor() {
       setAlertMessage('Pick at least 3 tags!')
       return
     }
-    if(!newPostImage) {
-      setShowAlert(true)
-      setAlertMessage(`You haven't pick an image for your article!`)
-      return
-    }
     try {
       setIsPosting(true)
       const formData = new FormData()
@@ -96,34 +118,50 @@ function BlogEditor() {
       formData.append("image", newPostImage)
       formData.append("content", editorRef.current.getContent())
 
-      const postResponse = await api.post('/create-post', formData)
-      if (postResponse.status === 200)
+      const updateResponse = await api.put(`/post/${params.postId}`, formData)
+      if (updateResponse.status === 200)
+        //console.log(updateResponse)
         navigate('/dashboard')
     } catch(err) {
-      console.log(err.response.data)
+      console.log(err)
     } finally {
       setIsPosting(false)
     }
   }
-  
-  return (
-    <>
-      <NavigationBar />
-      <Container>
-        <Row className="mb-4">
-          <Col>
-            {isLoading ? (<Spinner animation="border" variant="info" />) : (
-              <>
+
+  if(!isLoading && !isPostLoading) {
+    if(post.authorId !== user.sub) {
+      return (
+        <>
+          <NavigationBar />
+          <Container>
+            <Row>
+              <Col>
+                <div>You're not the author for this article</div>
+                <Link to="/dashboard">Return to dashboard</Link>
+              </Col>
+            </Row>
+          </Container>
+        </>
+      )
+    }
+    else {
+      return (
+        <>
+          <NavigationBar />
+          <Container>
+            <Row>
+              <Col>
                 <Form onSubmit={handleSubmitPost} className="mt-3">
 
                   <Form.Group className="mb-3" controlId="formPostTitle">
                     <Form.Label>Post Title</Form.Label>
-                    <Form.Control type="text" onChange={(e) => setNewTitle(e.target.value)} required/>
+                    <Form.Control type="text" defaultValue={newTitle} onChange={(e) => setNewTitle(e.target.value)} required/>
                   </Form.Group>
 
                   <Form.Group className="mb-3" controlId="formPostSubtitle">
                     <Form.Label>Post Subtitle</Form.Label>
-                    <Form.Control type="text" onChange={(e) => setNewSubtitle(e.target.value)} required/>
+                    <Form.Control type="text" defaultValue={newSubtitle} onChange={(e) => setNewSubtitle(e.target.value)} required/>
                   </Form.Group>
 
                   <Form.Label>Post Tags</Form.Label>
@@ -142,7 +180,7 @@ function BlogEditor() {
                     <Image className="mt-3 mb-3" src={imagePlus} width={50} role="button" title="upload image" onClick={handleClick}/>
                     {/* The actual file input, which is hidden */}
                     <Form.Control type="file" ref={fileInputRef} onChange={handleChange} /*Hide the input visually but keep it accessible */ style={{ display: 'none' }} />
-                    {newPostImage && (<Button className="ms-2" variant="secondary" size="sm" onClick={() => { setPreview(null); setNewPostImage(null) }}>Clear Image</Button>)}
+                    {newPostImage && (<Button className="ms-2" variant="secondary" size="sm" onClick={() => { setPreview(post.postPicture); setNewPostImage(null) }}>Revert Image</Button>)}
                     {preview && (
                       <>
                         <Image src={preview} rounded fluid />
@@ -155,7 +193,7 @@ function BlogEditor() {
                   <Editor
                     apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
                     onInit={ (_evt, editor) => editorRef.current = editor }
-                    initialValue="<p>Write your post content here :)</p>"
+                    initialValue={post.content}
                     init={{
                       height: 500,
                       menubar: false,
@@ -171,16 +209,17 @@ function BlogEditor() {
                       content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
                     }}
                   />
-                  <Button disabled={isPosting} className="mt-3" type="submit" variant="success">SUBMIT POST</Button>
+                  <Button disabled={isPosting} className="mt-3" type="submit" variant="success">UPDATE POST</Button>
                   {isPosting && (<Spinner className="mx-3 mt-3" animation="grow" variant="info" />)}
                 </Form>
-              </>
-            )}
-          </Col>
-        </Row>
-      </Container>
-    </>
-  )
+              </Col>
+            </Row>
+          </Container>
+      </>
+      )
+    }
+  }
+
 }
 
-export default BlogEditor
+export default EditPost

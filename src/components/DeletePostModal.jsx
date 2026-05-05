@@ -1,7 +1,7 @@
 import Modal from "react-bootstrap/Modal"
 import Button from "react-bootstrap/Button"
 
-function DeletePostModal({ show, post, cancelDeletePost, confirmDeletePost }) {
+function DeletePostModal({ show, post, cancelDeletePost, confirmDeletePost, isDeletingPost }) {
 
   return (
     <Modal show={show} centered onHide={cancelDeletePost}>
@@ -16,7 +16,7 @@ function DeletePostModal({ show, post, cancelDeletePost, confirmDeletePost }) {
         <Button variant="secondary" onClick={cancelDeletePost}>
           Close
         </Button>
-        <Button variant="danger" onClick={() => confirmDeletePost(post.id)}>
+        <Button variant="danger" disabled={isDeletingPost} onClick={() => confirmDeletePost(post.id)}>
           Delete Post
         </Button>
       </Modal.Footer>
